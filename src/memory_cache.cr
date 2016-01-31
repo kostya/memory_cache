@@ -6,9 +6,9 @@ class MemoryCache(K, V)
     def initialize(@value : V, @expired_at = nil)
     end
 
-    def expired?
+    def expired?(now = Time.now)
       if expired_at = @expired_at
-        expired_at < Time.now
+        expired_at < now
       else
         false
       end
@@ -84,7 +84,7 @@ class MemoryCache(K, V)
     now = Time.now
     c = 0
     @cache.each do |k, v|
-      if v.expired?
+      if v.expired?(now)
         @cache.delete(k)
         c += 1
       end
