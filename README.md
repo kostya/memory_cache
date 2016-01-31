@@ -23,18 +23,18 @@ require "memory_cache"
 cache = MemoryCache(String, Int32).new
 
 cache.write("bla", 1)
-cache.read("bla") # => 1
+p cache.read("bla") # => 1
 
 cache.fetch("haha") { 2 }
-cache.read("haha") # => 2
+p cache.read("haha") # => 2
 
 cache.write("expired1", 1, expires_in: 1.second)
-cache.read("expired1") # => 1
+p cache.read("expired1") # => 1
 sleep 1
-cache.read("expired1") # => nil
+p cache.read("expired1") # => nil
 
 cache.fetch("expired1", expires_in: 1.second) { 2 }
-cache.read("expired1") # => 2
+p cache.read("expired1") # => 2
 sleep 1
-cache.read("expired1") # => nil
+p cache.read("expired1") # => nil
 ```
