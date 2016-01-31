@@ -19,8 +19,13 @@ class MemoryCache(K, V)
     @cache.has_key?(k)
   end
 
-  def fetch(k : K, expires_in = nil, used_count = nil, &block : -> V) : V
-    read(k) || write(k, block.call, expires_in, used_count)
+  def fetch(k : K, expires_in = nil, used_count = nil, &block : -> V) : {Symbol, V}
+    if v = read(k)
+      {:cache, v}
+    else
+      v = write(k, block.call, expires_in, used_count)
+      {:fetch, v}
+    end
   end
 
   def read(k : K) : V?
