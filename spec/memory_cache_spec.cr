@@ -48,6 +48,14 @@ describe MemoryCache do
     CACHE.size.should eq 2
   end
 
+  it "update" do
+    CACHE.update("bla") { |v| v + 1 }.should eq 2
+    CACHE.read("bla").should eq 2
+
+    CACHE.update("----") { |v| v + 1 }.should eq nil
+    CACHE.read("----").should eq nil
+  end
+
   describe "expires_in" do
     it "write" do
       CACHE.write("ex1", 22, expires_in: 0.1.seconds)

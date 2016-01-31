@@ -61,6 +61,19 @@ class MemoryCache(K, V)
     v
   end
 
+  def update(k : K, &block : V -> V)
+    if v = @cache[k]?
+      if v.expired?
+        @cache.delete(k)
+        nil
+      else
+        new_v = block.call(v.value)
+        @cache[k] = Entry.new(new_v, v.expired_at)
+        new_v
+      end
+    end
+  end
+
   def clear
     @cache.clear
     self
