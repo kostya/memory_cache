@@ -84,6 +84,7 @@ class MemoryCache(K, V)
       end
     end
     deleted.each { |k| delete(k) }
+    self
   end
 
   def clear
