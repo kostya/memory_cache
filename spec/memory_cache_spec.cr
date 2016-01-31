@@ -56,6 +56,12 @@ describe MemoryCache do
     CACHE.read("----").should eq nil
   end
 
+  it "each" do
+    h = {} of String => Int32
+    CACHE.each { |k, v| h[k] = v }
+    h.should eq({"bla" => 1, "haha" => 2})
+  end
+
   describe "expires_in" do
     it "write" do
       CACHE.write("ex1", 22, expires_in: 0.1.seconds)
@@ -87,6 +93,21 @@ describe MemoryCache do
       CACHE.size.should eq 3
       sleep 0.2
       CACHE.cleanup.should eq({2, 1})
+      CACHE.size.should eq 2
+    end
+
+    it "each" do
+      CACHE.fetch("ex2", expires_in: 0.1.seconds) { 22 }
+      h = {} of String => Int32
+      CACHE.each { |k, v| h[k] = v }
+      h.should eq({"bla" => 1, "haha" => 2, "ex2" => 22})
+      CACHE.size.should eq 3
+
+      sleep 0.11
+
+      h = {} of String => Int32
+      CACHE.each { |k, v| h[k] = v }
+      h.should eq({"bla" => 1, "haha" => 2})
       CACHE.size.should eq 2
     end
   end

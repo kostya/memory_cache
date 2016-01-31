@@ -74,6 +74,18 @@ class MemoryCache(K, V)
     end
   end
 
+  def each(&block : K, V -> )
+    deleted = [] of K
+    @cache.each do |k, v|
+      if v.expired?
+        deleted << k
+      else
+        block.call(k, v.value)
+      end
+    end
+    deleted.each { |k| delete(k) }
+  end
+
   def clear
     @cache.clear
     self
