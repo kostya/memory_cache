@@ -1,8 +1,22 @@
 class MemoryCache(K, V)
   VERSION = "0.1"
 
+  struct Entry(V)
+    getter value, expired_at
+    def initialize(@value : V, @expired_at = nil)
+    end
+
+    def expired?
+      if expired_at = @expired_at
+        expired_at < Time.now
+      else
+        false
+      end
+    end
+  end
+
   def initialize
-    @cache = {} of K => {Time, V}
+    @cache = {} of K => Entry(V)
   end
 
   def size
@@ -11,7 +25,7 @@ class MemoryCache(K, V)
 
   def delete(k : K) : V?
     if v = @cache.delete(k)
-      v[1]
+      v.value
     end
   end
 
@@ -30,19 +44,20 @@ class MemoryCache(K, V)
 
   def read(k : K) : V?
     if v = @cache[k]?
-      at, value = v
-      if at < Time.now
+      if v.expired?
         @cache.delete(k)
         nil
       else
-        value
+        v.value
       end
     end
   end
 
   def write(k : K, v : V, expires_in = nil, used_count = nil) : V
-    expired_at = Time.now + (expires_in || 10.years)
-    @cache[k] = { expired_at, v }
+    expired_at = if expires_in
+      expired_at = Time.now + expires_in.to_f.seconds
+    end
+    @cache[k] = Entry.new(v, expired_at)
     v
   end
 
@@ -56,8 +71,7 @@ class MemoryCache(K, V)
     now = Time.now
     c = 0
     @cache.each do |k, v|
-      at, _ = v
-      if at < Time.now
+      if v.expired?
         @cache.delete(k)
         c += 1
       end
