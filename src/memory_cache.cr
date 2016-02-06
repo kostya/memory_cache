@@ -43,14 +43,7 @@ class MemoryCache(K, V)
   end
 
   def read(k : K) : V?
-    if v = @cache[k]?
-      if v.expired?
-        @cache.delete(k)
-        nil
-      else
-        v.value
-      end
-    end
+    read_entry(k).try &.value
   end
 
   def write(k : K, v : V, expires_in = nil, used_count = nil) : V
@@ -62,15 +55,10 @@ class MemoryCache(K, V)
   end
 
   def update(k : K, &block : V -> V)
-    if v = @cache[k]?
-      if v.expired?
-        @cache.delete(k)
-        nil
-      else
-        new_v = block.call(v.value)
-        @cache[k] = Entry.new(new_v, v.expired_at)
-        new_v
-      end
+    if e = read_entry(k)
+      new_v = block.call(e.value)
+      @cache[k] = Entry.new(new_v, e.expired_at)
+      new_v
     end
   end
 
@@ -103,5 +91,16 @@ class MemoryCache(K, V)
       end
     end
     { @cache.size, c }
+  end
+
+  private def read_entry(k : K) : Entry(V)?
+    if e = @cache[k]?
+      if e.expired?
+        @cache.delete(k)
+        nil
+      else
+        e
+      end
+    end
   end
 end
