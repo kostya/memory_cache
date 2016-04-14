@@ -3,7 +3,7 @@ class MemoryCache(K, V)
 
   struct Entry(V)
     getter value, expired_at
-    def initialize(@value : V, @expired_at = nil)
+    def initialize(@value : V, @expired_at : Time? = nil)
     end
 
     def expired?(now = Time.now)
