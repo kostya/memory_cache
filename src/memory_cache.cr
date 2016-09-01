@@ -48,7 +48,7 @@ class MemoryCache(K, V)
 
   def write(k : K, v : V, expires_in = nil, used_count = nil) : V
     expired_at = if expires_in
-      expired_at = Time.now + expires_in.to_f.seconds
+      Time.now + expires_in.to_f.seconds
     end
     @cache[k] = Entry.new(v, expired_at)
     v
