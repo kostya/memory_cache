@@ -147,7 +147,7 @@ describe MemoryCache do
   it "cache with complex key, value" do
     cache = MemoryCache({Int32, String}, {String, Int32}).new
     k = {10, "bla"}
-    v = { "haha", 11 }
+    v = {"haha", 11}
     cache.fetch(k) { v }.should eq({:fetch, v})
     cache.read(k).should eq v
     cache.delete(k)
