@@ -1,5 +1,5 @@
 class MemoryCache(K, V)
-  VERSION = "0.2"
+  VERSION = "0.3"
 
   struct Entry(V)
     getter value, expired_at
