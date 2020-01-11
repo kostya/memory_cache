@@ -7,7 +7,7 @@ class MemoryCache(K, V)
     def initialize(@value : V, @expired_at : Time? = nil)
     end
 
-    def expired?(now = Time.now)
+    def expired?(now = Time.local)
       if expired_at = @expired_at
         expired_at < now
       else
@@ -49,7 +49,7 @@ class MemoryCache(K, V)
 
   def write(k : K, v : V, expires_in = nil, used_count = nil) : V
     expired_at = if expires_in
-                   Time.now + expires_in.to_f.seconds
+                   Time.local + expires_in.to_f.seconds
                  end
     @cache[k] = Entry.new(v, expired_at)
     v
@@ -83,7 +83,7 @@ class MemoryCache(K, V)
 
   # cleanup all expired values
   def cleanup
-    now = Time.now
+    now = Time.local
     c = 0
     @cache.each do |k, v|
       if v.expired?(now)

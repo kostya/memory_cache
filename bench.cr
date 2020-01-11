@@ -20,6 +20,10 @@ Benchmark.ips do |b|
 end
 
 Benchmark.ips do |b|
-  b.report("hash fetch") { if v = hash["bla"]?; v; else; v = "haha"; hash["bla"] = v; v end }
+  b.report("hash fetch") { if v = hash["bla"]?
+    v
+  else
+    v = "haha"; hash["bla"] = v; v
+  end }
   b.report("cache fetch") { cache.fetch("bla") { "haha" } }
 end
