@@ -144,6 +144,17 @@ describe MemoryCache do
     CACHE.read("ex4").should eq 44
   end
 
+  it "doesn't save value on exception" do
+    cache = MemoryCache(Int32, Int32).new
+    k = 1
+    expect_raises(Exception, "oops") do
+      cache.fetch(k) do
+        raise "oops"
+      end
+    end
+    cache.read(k).should be_nil
+  end
+
   it "cache with complex key, value" do
     cache = MemoryCache({Int32, String}, {String, Int32}).new
     k = {10, "bla"}
