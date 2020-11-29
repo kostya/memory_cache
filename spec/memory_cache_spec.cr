@@ -153,4 +153,14 @@ describe MemoryCache do
     cache.delete(k)
     cache.read(k).should eq nil
   end
+
+  it "fetch with control flow" do
+    cache = MemoryCache(Int32, Int32?).new
+    k = 10
+    cache.fetch(k) do
+      break 5
+      99
+    end.should eq({:fetch, 5})
+    cache.read(k).should eq 5
+  end
 end

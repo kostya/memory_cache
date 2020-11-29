@@ -34,12 +34,13 @@ class MemoryCache(K, V)
     @cache.has_key?(k)
   end
 
-  def fetch(k : K, expires_in = nil, used_count = nil, &block : -> V) : {Symbol, V}
+  def fetch(k : K, expires_in = nil, used_count = nil, & : -> V) : {Symbol, V}
     if v = read(k)
       {:cache, v}
     else
-      v = write(k, block.call, expires_in, used_count)
-      {:fetch, v}
+      new_v = yield
+      write(k, new_v, expires_in, used_count)
+      {:fetch, new_v}
     end
   end
 
@@ -55,21 +56,21 @@ class MemoryCache(K, V)
     v
   end
 
-  def update(k : K, &block : V -> V)
+  def update(k : K, & : V -> V)
     if e = read_entry(k)
-      new_v = block.call(e.value)
+      new_v = yield e.value
       @cache[k] = Entry.new(new_v, e.expired_at)
       new_v
     end
   end
 
-  def each(&block : K, V ->)
+  def each(& : K, V ->)
     deleted = [] of K
     @cache.each do |k, v|
       if v.expired?
         deleted << k
       else
-        block.call(k, v.value)
+        yield k, v.value
       end
     end
     deleted.each { |k| delete(k) }
