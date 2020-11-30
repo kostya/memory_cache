@@ -34,12 +34,12 @@ class MemoryCache(K, V)
     @cache.has_key?(k)
   end
 
-  def fetch(k : K, expires_in = nil, used_count = nil, & : -> V) : {Symbol, V}
+  def fetch(k : K, expires_in = nil, & : -> V) : {Symbol, V}
     if v = read(k)
       {:cache, v}
     else
       new_v = yield
-      write(k, new_v, expires_in, used_count)
+      write(k, new_v, expires_in)
       {:fetch, new_v}
     end
   end
@@ -48,7 +48,7 @@ class MemoryCache(K, V)
     read_entry(k).try &.value
   end
 
-  def write(k : K, v : V, expires_in = nil, used_count = nil) : V
+  def write(k : K, v : V, expires_in = nil) : V
     expired_at = if expires_in
                    Time.local + expires_in.to_f.seconds
                  end
