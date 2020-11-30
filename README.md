@@ -4,10 +4,11 @@
 
 Super simple in memory key-value storage with expires for Crystal.
 
+Can be used for a session or token store.
+
 ## Installation
 
-
-Add this to your application's `shard.yml`:
+Add the dependency to your `shard.yml`:
 
 ```yaml
 dependencies:
@@ -15,9 +16,9 @@ dependencies:
     github: kostya/memory_cache
 ```
 
-
 ## Usage
 
+### Simple write/read key
 
 ```crystal
 require "memory_cache"
@@ -25,18 +26,34 @@ require "memory_cache"
 cache = MemoryCache(String, Int32).new
 
 cache.write("bla", 1)
-p cache.read("bla") # => 1
+p cache.read?("bla") # => 1
+```
 
-cache.fetch("haha") { 2 }
-p cache.read("haha") # => 2
+### Fetch a key or add it if not present
 
-cache.write("expired1", 1, expires_in: 1.second)
-p cache.read("expired1") # => 1
-sleep 1
-p cache.read("expired1") # => nil
+```crystal
+require "memory_cache"
 
-p cache.fetch("expired1", expires_in: 1.second) { 2 } # => {:fetch, 2}
-p cache.fetch("expired1", expires_in: 1.second) { 3 } # => {:cache, 2}
-sleep 1
-p cache.fetch("expired1", expires_in: 1.second) { 3 } # => {:fetch, 3}
+cache = MemoryCache(String, Int32).new
+
+unless value = cache.read? "key"
+  value = cache.write("key", 1)
+end
+
+p value
+```
+
+### Garbage collector example
+
+Checks each hour to cleans up all keys older than 1 day.
+
+```crystal
+require "memory_cache"
+
+cache = MemoryCache(String, Int32).new
+loop do
+  sleep 1.hour
+  count = cache.cleanup max_period: 1.day
+  puts "#{count} keys freed"
+end
 ```

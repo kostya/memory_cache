@@ -1,177 +1,140 @@
-require "./spec_helper"
+require "spec"
+require "../src/memory_cache"
 
 describe MemoryCache do
-  it "read" do
-    CACHE.read("-----").should eq nil
-    CACHE.read("bla").should eq 1
-    CACHE.read("haha").should eq 2
+  it "read?" do
+    cache = MemoryCache(String, Int32).new
+    cache.write("a", 1)
+    cache.write("b", 2)
+    cache.read?("-----").should be_nil
+    cache.read?("a").should eq 1
+    cache.read?("b").should eq 2
+  end
+
+  it "read_entry?" do
+    cache = MemoryCache(String, Int32).new
+    time = Time.local
+    cache.write("a", 1, time)
+    entry = cache.read_entry?("a").should_not be_nil
+    entry.time.should eq time
+    entry.value.should eq 1
   end
 
   it "size" do
-    CACHE.size.should eq 2
+    cache = MemoryCache(String, Int32).new
+    cache.write("one", 1)
+    cache.write("two", 2)
+    cache.size.should eq 2
   end
 
   it "exists?" do
-    CACHE.exists?("bla").should eq true
-    CACHE.exists?("-----").should eq false
+    cache = MemoryCache(String, Int32).new
+    cache.write("bla", 1)
+    cache.exists?("bla").should be_true
+    cache.exists?("-----").should be_false
   end
 
   it "delete" do
-    CACHE.delete("bla").should eq 1
-    CACHE.size.should eq 1
-    CACHE.read("bla").should eq nil
-    CACHE.delete("bla").should eq nil
+    cache = MemoryCache(String, Int32).new
+    cache.write("bla", 1)
+    cache.delete("bla").should eq 1
+    cache.size.should eq 0
+    cache.read?("bla").should be_nil
+    cache.delete("bla").should be_nil
+  end
+
+  describe "delete_if_older" do
+    it "deletes the old key" do
+      cache = MemoryCache(String, Int32).new
+      cache.write("bla", 1)
+      cache.delete_if_older("bla", 9.second).should be_nil
+    end
+
+    it "keeps the key" do
+      cache = MemoryCache(String, Int32).new
+      cache.write("bla", 1)
+      cache.delete_if_older("bla", 0.second).should eq 1
+    end
   end
 
   it "clear" do
-    CACHE.clear
-    CACHE.size.should eq 0
-    CACHE.read("bla").should eq nil
+    cache = MemoryCache(String, Int32).new
+    cache.write("bla", 1)
+    cache.size.should eq 1
+    cache.clear
+    cache.size.should eq 0
+    cache.read?("bla").should be_nil
   end
 
   it "write" do
-    CACHE.write("jjj", 11).should eq 11
-    CACHE.read("jjj").should eq 11
+    cache = MemoryCache(String, Int32).new
+    cache.write("a", 11).should eq 11
+    cache.read?("a").should eq 11
   end
 
-  it "fetch" do
-    CACHE.fetch("bla") { 2 }.should eq({:cache, 1})
-    CACHE.fetch("----") { 2 }.should eq({:fetch, 2})
-    CACHE.fetch("----") { 2 }.should eq({:cache, 2})
+  describe "fetch" do
+    it "a value" do
+      cache = MemoryCache(String, Int32).new
+      cache.write("a", 11)
+      cache.fetch("a") { 2 }.should eq 11
+    end
 
-    CACHE.read("----").should eq 2
+    it "not present value" do
+      cache = MemoryCache(Int32, Int32).new
+      k = 1
+      not_found = false
+      cache.fetch(k) do
+        not_found = true
+      end.should be_nil
+      cache.read?(k).should be_nil
+      not_found.should be_true
+    end
   end
 
-  it "cleanup" do
-    CACHE.size.should eq 2
-    CACHE.cleanup
-    CACHE.size.should eq 2
-  end
+  describe "cleanup" do
+    it "cleans old keys" do
+      cache = MemoryCache(String, Int32).new
+      cache.write("a", 1)
+      cache.size.should eq 1
+      cache.cleanup(0.second).should eq 1
+      cache.size.should eq 0
+    end
 
-  it "update" do
-    CACHE.update("bla") { |v| v + 1 }.should eq 2
-    CACHE.read("bla").should eq 2
-
-    CACHE.update("----") { |v| v + 1 }.should eq nil
-    CACHE.read("----").should eq nil
+    it "keeps yound keys" do
+      cache = MemoryCache(String, Int32).new
+      cache.write("a", 1)
+      cache.size.should eq 1
+      cache.cleanup(9.seconds).should eq 0
+      cache.size.should eq 1
+    end
   end
 
   it "each" do
-    h = {} of String => Int32
-    CACHE.each { |k, v| h[k] = v }
-    h.should eq({"bla" => 1, "haha" => 2})
-  end
-
-  describe "expires_in" do
-    it "write" do
-      CACHE.write("ex1", 22, expires_in: 0.1.seconds)
-      100.times do
-        CACHE.read("ex1").should eq 22
-      end
-      CACHE.size.should eq 3
-      sleep 0.2
-      CACHE.read("ex1").should eq nil
-      CACHE.size.should eq 2
-    end
-
-    it "fetch" do
-      CACHE.fetch("ex2", expires_in: 0.1.seconds) { 22 }
-      100.times do
-        CACHE.read("ex2").should eq 22
-      end
-      CACHE.size.should eq 3
-      sleep 0.2
-      CACHE.read("ex2").should eq nil
-      CACHE.size.should eq 2
-    end
-
-    it "cleanup" do
-      CACHE.fetch("ex2", expires_in: 0.1.seconds) { 22 }
-      100.times do
-        CACHE.read("ex2").should eq 22
-      end
-      CACHE.size.should eq 3
-      sleep 0.2
-      CACHE.cleanup.should eq(1)
-      CACHE.size.should eq 2
-    end
-
-    it "each" do
-      CACHE.fetch("ex2", expires_in: 0.1.seconds) { 22 }
-      h = {} of String => Int32
-      CACHE.each { |k, v| h[k] = v }
-      h.should eq({"bla" => 1, "haha" => 2, "ex2" => 22})
-      CACHE.size.should eq 3
-
-      sleep 0.11
-
-      h = {} of String => Int32
-      CACHE.each { |k, v| h[k] = v }
-      h.should eq({"bla" => 1, "haha" => 2})
-      CACHE.size.should eq 2
-    end
-  end
-
-  it "integration" do
-    CACHE.fetch("ex1", expires_in: 0.1.seconds) { 11 }
-    CACHE.fetch("ex2", expires_in: 0.2.seconds) { 22 }
-    CACHE.write("ex3", 33, expires_in: 0.3.seconds)
-    CACHE.write("ex4", 44)
-    CACHE.cleanup
-    CACHE.size.should eq 6
-    100.times do
-      CACHE.read("ex1").should eq 11
-      CACHE.read("ex2").should eq 22
-      CACHE.read("ex3").should eq 33
-      CACHE.read("ex4").should eq 44
-    end
-
-    sleep 0.21
-    CACHE.cleanup
-    CACHE.size.should eq 4
-
-    100.times do
-      CACHE.read("ex1").should eq nil
-      CACHE.read("ex2").should eq nil
-      CACHE.read("ex3").should eq 33
-      CACHE.read("ex4").should eq 44
-    end
-
-    sleep 0.1
-    CACHE.read("ex1").should eq nil
-    CACHE.read("ex2").should eq nil
-    CACHE.read("ex3").should eq nil
-    CACHE.read("ex4").should eq 44
-  end
-
-  it "doesn't save value on exception" do
-    cache = MemoryCache(Int32, Int32).new
-    k = 1
-    expect_raises(Exception, "oops") do
-      cache.fetch(k) do
-        raise "oops"
-      end
-    end
-    cache.read(k).should be_nil
+    h = Hash(String, Int32).new
+    cache = MemoryCache(String, Int32).new
+    cache.write("a", 1)
+    cache.write("b", 2)
+    cache.each { |k, v| h[k] = v }
+    h.should eq({"a" => 1, "b" => 2})
   end
 
   it "cache with complex key, value" do
     cache = MemoryCache({Int32, String}, {String, Int32}).new
     k = {10, "bla"}
     v = {"haha", 11}
-    cache.fetch(k) { v }.should eq({:fetch, v})
-    cache.read(k).should eq v
+    cache.write(k, v).should eq v
+    cache.fetch(k) { v }.should eq(v)
+    cache.read?(k).should eq v
     cache.delete(k)
-    cache.read(k).should eq nil
+    cache.read?(k).should eq nil
   end
 
   it "fetch with control flow" do
     cache = MemoryCache(Int32, Int32).new
     k = 10
     cache.fetch(k) do
-      next 5
+      break 5
       99
-    end.should eq({:fetch, 5})
-    cache.read(k).should eq 5
+    end.should eq(5)
   end
 end

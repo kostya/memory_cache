@@ -1,18 +1,8 @@
 class MemoryCache(K, V)
-  VERSION = "0.3"
-
   struct Entry(V)
-    getter value, expired_at
+    getter value, time
 
-    def initialize(@value : V, @expired_at : Time? = nil)
-    end
-
-    def expired?(now = Time.local)
-      if expired_at = @expired_at
-        expired_at < now
-      else
-        false
-      end
+    def initialize(@value : V, @time : Time)
     end
   end
 
@@ -20,86 +10,77 @@ class MemoryCache(K, V)
     @cache = {} of K => Entry(V)
   end
 
+  # Returns the number of elements in this `MemoryCache` store.
   def size
     @cache.size
   end
 
-  def delete(k : K) : V?
-    if v = @cache.delete(k)
-      v.value
+  # Deletes the key.
+  def delete(key : K) : V?
+    if entry = @cache.delete(key)
+      entry.value
     end
   end
 
-  def exists?(k : K) : Bool
-    @cache.has_key?(k)
-  end
-
-  def fetch(k : K, expires_in = nil, & : -> V) : {Symbol, V}
-    if v = read(k)
-      {:cache, v}
-    else
-      new_v = yield
-      write(k, new_v, expires_in)
-      {:fetch, new_v}
-    end
-  end
-
-  def read(k : K) : V?
-    read_entry(k).try &.value
-  end
-
-  def write(k : K, v : V, expires_in = nil) : V
-    expired_at = if expires_in
-                   Time.local + expires_in.to_f.seconds
-                 end
-    @cache[k] = Entry.new(v, expired_at)
-    v
-  end
-
-  def update(k : K, & : V -> V)
-    if e = read_entry(k)
-      new_v = yield e.value
-      @cache[k] = Entry.new(new_v, e.expired_at)
-      new_v
-    end
-  end
-
-  def each(& : K, V ->)
-    deleted = [] of K
-    @cache.each do |k, v|
-      if v.expired?
-        deleted << k
-      else
-        yield k, v.value
+  # Delete the key if present and older than the max period.
+  def delete_if_older(key : K, max_period : Time::Span, time : Time = Time.local) : V?
+    if entry = @cache[key]?
+      max_time = time - max_period
+      if entry.time < max_time
+        @cache.delete(key).try &.value
       end
     end
-    deleted.each { |k| delete(k) }
-    self
   end
 
+  # Returns `true` when key given by key exists, otherwise `false`.
+  def exists?(key : K) : Bool
+    @cache.has_key?(key)
+  end
+
+  # Returns the value for the key given by key, or when not found calls the given block with the key and returns nil.
+  def fetch(key : K, & : K ->)
+    @cache.fetch key do
+      yield key
+      return
+    end.value
+  end
+
+  # Returns the value for the key, if present.
+  def read?(key : K) : V?
+    @cache[key]?.try &.value
+  end
+
+  # Returns the value and time for the key, if present.
+  def read_entry?(key : K) : Entry(V)?
+    @cache[key]?
+  end
+
+  # Writes the key with the given value and creation time.
+  def write(key : K, value : V, time : Time = Time.local) : V
+    @cache[key] = Entry.new(value, time)
+    value
+  end
+
+  # Calls the given block for each key-value pair and passes in the key and the value.
+  def each(& : K, V, Time ->) : Nil
+    @cache.each do |key, entry|
+      yield key, entry.value, entry.time
+    end
+  end
+
+  # Empties the whole `MemoryCache` store.
   def clear
     @cache.clear
     self
   end
 
-  # Cleanups all expired values, and returns the cleaned count.
-  def cleanup : Int32
-    now = Time.local
+  # Cleans-up all keys older than the max period, and returns the cleaned count.
+  def cleanup(max_period : Time::Span, time : Time = Time.local) : Int32
+    max_time = time - max_period
     old_size = size
-    @cache.reject! do |_, v|
-      v.expired?(now)
+    @cache.reject! do |_, entry|
+      entry.time < max_time
     end
     old_size - size
-  end
-
-  private def read_entry(k : K) : Entry(V)?
-    if e = @cache[k]?
-      if e.expired?
-        @cache.delete(k)
-        nil
-      else
-        e
-      end
-    end
   end
 end
