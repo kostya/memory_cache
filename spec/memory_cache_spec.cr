@@ -35,9 +35,9 @@ describe MemoryCache do
   end
 
   it "fetch" do
-    CACHE.fetch("bla") { 2 }.should eq({:cache, 1})
-    CACHE.fetch("----") { 2 }.should eq({:fetch, 2})
-    CACHE.fetch("----") { 2 }.should eq({:cache, 2})
+    CACHE.fetch("bla") { 2 }.should eq(1)
+    CACHE.fetch("----") { 2 }.should eq(2)
+    CACHE.fetch("----") { 2 }.should eq(2)
 
     CACHE.read("----").should eq 2
   end
@@ -159,7 +159,7 @@ describe MemoryCache do
     cache = MemoryCache({Int32, String}, {String, Int32}).new
     k = {10, "bla"}
     v = {"haha", 11}
-    cache.fetch(k) { v }.should eq({:fetch, v})
+    cache.fetch(k) { v }.should eq(v)
     cache.read(k).should eq v
     cache.delete(k)
     cache.read(k).should eq nil
@@ -171,7 +171,7 @@ describe MemoryCache do
     cache.fetch(k) do
       next 5
       99
-    end.should eq({:fetch, 5})
+    end.should eq(5)
     cache.read(k).should eq 5
   end
 end

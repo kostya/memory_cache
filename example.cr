@@ -13,7 +13,7 @@ p cache.read("expired1") # => 1
 sleep 1
 p cache.read("expired1") # => nil
 
-p cache.fetch("expired1", expires_in: 1.second) { 2 } # => {:fetch, 2}
-p cache.fetch("expired1", expires_in: 1.second) { 3 } # => {:cache, 2}
+p cache.fetch("expired1", expires_in: 1.second) { 2 } # => 2
+p cache.fetch("expired1", expires_in: 1.second) { 3 } # => 2
 sleep 1
-p cache.fetch("expired1", expires_in: 1.second) { 3 } # => {:fetch, 3}
+p cache.fetch("expired1", expires_in: 1.second) { 3 } # => 3

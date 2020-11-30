@@ -34,13 +34,13 @@ class MemoryCache(K, V)
     @cache.has_key?(k)
   end
 
-  def fetch(k : K, expires_in = nil, & : -> V) : {Symbol, V}
+  def fetch(k : K, expires_in = nil, & : -> V) : V
     if v = read(k)
-      {:cache, v}
+      v
     else
-      new_v = yield
+      new_v = yield k
       write(k, new_v, expires_in)
-      {:fetch, new_v}
+      new_v
     end
   end
 
