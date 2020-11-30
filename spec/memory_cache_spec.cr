@@ -92,7 +92,7 @@ describe MemoryCache do
       end
       CACHE.size.should eq 3
       sleep 0.2
-      CACHE.cleanup.should eq({2, 1})
+      CACHE.cleanup.should eq(1)
       CACHE.size.should eq 2
     end
 

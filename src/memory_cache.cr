@@ -82,17 +82,14 @@ class MemoryCache(K, V)
     self
   end
 
-  # cleanup all expired values
-  def cleanup
+  # Cleanups all expired values, and returns the cleaned count.
+  def cleanup : Int32
     now = Time.local
-    c = 0
-    @cache.each do |k, v|
-      if v.expired?(now)
-        @cache.delete(k)
-        c += 1
-      end
+    old_size = size
+    @cache.reject! do |_, v|
+      v.expired?(now)
     end
-    {@cache.size, c}
+    old_size - size
   end
 
   private def read_entry(k : K) : Entry(V)?
