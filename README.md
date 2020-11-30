@@ -1,5 +1,7 @@
 # MemoryCache
 
+[![CI](https://github.com/kostya/memory_cache/workflows/CI/badge.svg)](https://github.com/kostya/memory_cache/actions?query=workflow%3ACI)
+
 Super simple in memory key-value storage with expires for Crystal.
 
 ## Installation
