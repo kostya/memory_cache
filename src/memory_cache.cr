@@ -89,6 +89,7 @@ class MemoryCache(K, V)
     @cache.reject! do |_, v|
       v.expired?(now)
     end
+    @cache.rehash
     old_size - size
   end
 
