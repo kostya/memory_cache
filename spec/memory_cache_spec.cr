@@ -74,6 +74,17 @@ describe MemoryCache do
       CACHE.size.should eq 2
     end
 
+    it "exists?" do
+      CACHE.write("ex1", 22, expires_in: 0.1.seconds)
+      100.times do
+        CACHE.exists?("ex1").should eq true
+      end
+      CACHE.size.should eq 3
+      sleep 0.2
+      CACHE.exists?("ex1").should eq false
+      CACHE.size.should eq 2
+    end
+
     it "fetch" do
       CACHE.fetch("ex2", expires_in: 0.1.seconds) { 22 }
       100.times do

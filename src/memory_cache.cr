@@ -31,7 +31,7 @@ class MemoryCache(K, V)
   end
 
   def exists?(k : K) : Bool
-    @cache.has_key?(k)
+    !!read_entry(k)
   end
 
   def fetch(k : K, expires_in = nil, & : -> V) : V
