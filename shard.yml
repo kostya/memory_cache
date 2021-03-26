@@ -1,5 +1,7 @@
 name: memory_cache
-version: 0.4
+version: 0.4.1
+
+crystal: ">= 0.35.1, < 2.0.0"
 
 authors:
   - Konstantin Makarchev <kostya27@gmail.com>
